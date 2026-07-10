@@ -1,0 +1,64 @@
+@import "tailwindcss";
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+:root {
+  --louange-purple: #3b169b;
+  --louange-purple-dark: #210b5c;
+  --louange-purple-light: #6d42d9;
+
+  --louange-gold: #f2b705;
+  --louange-gold-dark: #c98a00;
+  --louange-gold-soft: #fff1b8;
+
+  --louange-black: #111111;
+  --louange-white: #ffffff;
+  --louange-bg: #fff8e6;
+  --louange-muted: #4b5563;
+
+  --louange-success: #16a34a;
+  --louange-danger: #dc2626;
+  --louange-warning: #f59e0b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--louange-bg);
+  color: var(--louange-black);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+@keyframes louange-float {
+  0% {
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-4px) scale(1.04) rotate(-1deg);
+  }
+  100% {
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+.louange-logo-animated {
+  animation: louange-float 3s ease-in-out infinite;
+}
