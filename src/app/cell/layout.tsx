@@ -1,10 +1,14 @@
-import { ReactNode } from "react";
 import AppShell from "@/components/layout/AppShell";
+import CellAccessGuard from "@/components/auth/CellAccessGuard";
 
 export default function CellLayout({
   children,
 }: {
-  children: ReactNode;
+  children: React.ReactNode;
 }) {
-  return <AppShell variant="cell">{children}</AppShell>;
+  return (
+    <CellAccessGuard>
+      <AppShell variant="cell">{children}</AppShell>
+    </CellAccessGuard>
+  );
 }

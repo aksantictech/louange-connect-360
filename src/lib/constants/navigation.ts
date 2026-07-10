@@ -1,27 +1,24 @@
+import type { LucideIcon } from "lucide-react";
 import {
   Activity,
-  BarChart3,
   Bell,
   Building2,
   Church,
   ClipboardCheck,
-  CreditCard,
   FileText,
-  HandCoins,
-  Home,
-  Landmark,
   LayoutDashboard,
   MapPinned,
   Settings,
   ShieldCheck,
   UserRoundCheck,
   Users,
+  Wallet,
 } from "lucide-react";
 
 export type NavigationItem = {
   label: string;
   href: string;
-  icon: any;
+  icon: LucideIcon;
 };
 
 export const centralNavigation: NavigationItem[] = [
@@ -41,14 +38,9 @@ export const centralNavigation: NavigationItem[] = [
     icon: Church,
   },
   {
-  label: "Pasteurs",
-  href: "/central/pastors",
-  icon: UserRoundCheck,
-},
-  {
-    label: "Rapports",
-    href: "/central/reports",
-    icon: FileText,
+    label: "Pasteurs",
+    href: "/central/pastors",
+    icon: UserRoundCheck,
   },
   {
     label: "Activités",
@@ -56,34 +48,34 @@ export const centralNavigation: NavigationItem[] = [
     icon: Activity,
   },
   {
+    label: "Rapports",
+    href: "/central/reports",
+    icon: FileText,
+  },
+  {
     label: "Finances",
     href: "/central/finances",
-    icon: HandCoins,
+    icon: Wallet,
   },
   {
     label: "Validations",
-    href: "/central/approvals",
+    href: "/central/validations",
     icon: ClipboardCheck,
   },
   {
     label: "Patrimoine",
     href: "/central/assets",
-    icon: Landmark,
+    icon: Building2,
   },
   {
     label: "Serviteurs",
     href: "/central/servants",
-    icon: Users,
-  },
-  {
-    label: "Départements",
-    href: "/central/departments",
-    icon: Building2,
+    icon: ShieldCheck,
   },
   {
     label: "Utilisateurs",
     href: "/central/users",
-    icon: ShieldCheck,
+    icon: Users,
   },
   {
     label: "Notifications",
@@ -99,49 +91,26 @@ export const centralNavigation: NavigationItem[] = [
 
 export const cellNavigation: NavigationItem[] = [
   {
-    label: "Mon dashboard",
+    label: "Dashboard",
     href: "/cell/dashboard",
-    icon: Home,
-  },
-  {
-    label: "Rapport dimanche",
-    href: "/cell/sunday-report",
-    icon: FileText,
+    icon: LayoutDashboard,
   },
   {
     label: "Activités",
     href: "/cell/activities",
     icon: Activity,
   },
- 
   {
     label: "Finances",
     href: "/cell/finances",
-    icon: CreditCard,
+    icon: Wallet,
   },
   {
-    label: "Serviteurs",
-    href: "/cell/servants",
-    icon: Users,
-  },
-  {
-    label: "Départements",
-    href: "/cell/departments",
-    icon: Building2,
-  },
-  {
-    label: "Patrimoine local",
-    href: "/cell/assets",
-    icon: Landmark,
-  },
-  {
-    label: "Besoins",
-    href: "/cell/needs",
-    icon: BarChart3,
-  },
-  {
-    label: "Notifications",
-    href: "/cell/notifications",
-    icon: Bell,
+    label: "Rapports",
+    href: "/cell/reports",
+    icon: FileText,
   },
 ];
+
+// Compatibilité si un ancien fichier importe encore navigationItems
+export const navigationItems = centralNavigation;
