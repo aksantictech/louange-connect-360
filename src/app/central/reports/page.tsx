@@ -1,4 +1,5 @@
 import Link from "next/link";
+import PrintButton from "@/components/ui/PrintButton";
 import {
   Activity,
   ArrowDownCircle,
@@ -509,12 +510,17 @@ export default async function CentralReportsPage({ searchParams }: PageProps) {
   return (
     <div>
       <PageHeader
-        title="Rapports globaux"
-        description="Vue consolidée des données envoyées par les cellules : activités, recettes, dépenses et rapports mensuels."
-      />
+  title="Rapports globaux"
+  description="Vue consolidée des données envoyées par les cellules : activités, recettes, dépenses et rapports mensuels."
+  action={
+    <PrintButton
+      label="Imprimer le rapport"
+      title="Rapport global - Louange Connect 360"
+    />
+  }
+/>
 
-      <section className="mb-6 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">
-        <div className="mb-4 flex items-center gap-2">
+<section className="no-print mb-6 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">        <div className="mb-4 flex items-center gap-2">
           <Filter size={20} className="text-[var(--louange-purple)]" />
           <h3 className="text-lg font-black text-gray-950">
             Filtres des rapports
@@ -623,7 +629,17 @@ export default async function CentralReportsPage({ searchParams }: PageProps) {
           </div>
         </form>
       </section>
-
+<div id="printable-report">
+  <div className="print-only mb-6 border-b pb-4">
+    <h1 className="text-2xl font-black">Louange Connect 360</h1>
+    <p className="text-sm">
+      Rapport global généré le {new Date().toLocaleDateString("fr-FR")}
+    </p>
+    <p className="text-sm">
+      Période : {dateFrom} au {dateTo}
+    </p>
+  </div>
+   </div>
       {errors.length > 0 ? (
         <div className="mb-6 rounded-3xl bg-red-50 p-5 text-sm font-bold text-red-700">
           {errors.join(" / ")}
