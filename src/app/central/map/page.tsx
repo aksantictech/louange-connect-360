@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Filter, MapPinned } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import CellMapClient from "@/components/map/CellMapClient";
+import CellStatusBadge from "@/components/cells/CellStatusBadge";
 import { supabase } from "@/lib/supabase/client";
 
 export const dynamic = "force-dynamic";
@@ -28,8 +29,8 @@ type CellMapItem = {
   longitude: number | null;
 };
 
-function onlyStrings(value: string | null | undefined): value is string {
-  return Boolean(value);
+function cleanStringList(values: Array<string | null | undefined>) {
+  return Array.from(new Set(values.filter(Boolean) as string[])).sort();
 }
 
 export default async function CentralMapPage({ searchParams }: PageProps) {
@@ -43,24 +44,17 @@ export default async function CentralMapPage({ searchParams }: PageProps) {
     .from("cells")
     .select("country, city, status");
 
-  const countries = Array.from(
-    new Set(
-      (allCells || [])
-        .map((cell) => cell.country)
-        .filter(onlyStrings)
-    )
-  ).sort();
+  const countries = cleanStringList(
+    (allCells || []).map((cell) => cell.country)
+  );
 
-  const cities = Array.from(
-    new Set(
-      (allCells || [])
-        .filter((cell) =>
-          selectedCountry ? cell.country === selectedCountry : true
-        )
-        .map((cell) => cell.city)
-        .filter(onlyStrings)
-    )
-  ).sort();
+  const cities = cleanStringList(
+    (allCells || [])
+      .filter((cell) =>
+        selectedCountry ? cell.country === selectedCountry : true
+      )
+      .map((cell) => cell.city)
+  );
 
   let query = supabase
     .from("cells")
@@ -85,7 +79,19 @@ export default async function CentralMapPage({ searchParams }: PageProps) {
 
   const { data: cells, error } = await query;
 
-  const mappedCells = (cells || []) as CellMapItem[];
+  const mappedCells: CellMapItem[] = (cells || []).map((cell: any) => ({
+    id: cell.id,
+    code: cell.code || "-",
+    name: cell.name || "Cellule sans nom",
+    country: cell.country || "-",
+    city: cell.city || null,
+    address: cell.address || null,
+    pastor_name: cell.pastor_name || null,
+    pastor_phone: cell.pastor_phone || null,
+    status: cell.status || null,
+    latitude: cell.latitude,
+    longitude: cell.longitude,
+  }));
 
   return (
     <div>
@@ -102,7 +108,7 @@ export default async function CentralMapPage({ searchParams }: PageProps) {
           </h3>
         </div>
 
-        <form className="grid gap-4 md:grid-cols-4">
+        <form className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <SelectFilter
             name="country"
             label="Pays"
@@ -130,7 +136,7 @@ export default async function CentralMapPage({ searchParams }: PageProps) {
             }}
           />
 
-          <div className="flex items-end gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
             <button
               type="submit"
               className="w-full rounded-2xl bg-[var(--louange-purple)] px-5 py-3 text-sm font-black text-white"
@@ -140,7 +146,7 @@ export default async function CentralMapPage({ searchParams }: PageProps) {
 
             <Link
               href="/central/map"
-              className="rounded-2xl border border-gray-200 bg-white px-5 py-3 text-sm font-black text-gray-700"
+              className="inline-flex w-full items-center justify-center rounded-2xl border border-gray-200 bg-white px-5 py-3 text-sm font-black text-gray-700 sm:w-auto"
             >
               Reset
             </Link>
@@ -155,7 +161,7 @@ export default async function CentralMapPage({ searchParams }: PageProps) {
       ) : null}
 
       <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex items-center justify-between gap-4">
           <div>
             <h3 className="text-xl font-black text-gray-950">
               Cellules géolocalisées
@@ -171,6 +177,101 @@ export default async function CentralMapPage({ searchParams }: PageProps) {
         </div>
 
         <CellMapClient cells={mappedCells} />
+
+        <div className="mt-6 rounded-2xl border border-gray-100">
+          <div className="max-w-full overflow-x-auto">
+            <table className="min-w-[950px] divide-y divide-gray-100">
+              <thead className="bg-[var(--louange-purple-dark)] text-white">
+                <tr>
+                  <Th>Église / Cellule</Th>
+                  <Th>Pays / Ville</Th>
+                  <Th>Adresse</Th>
+                  <Th>Pasteur</Th>
+                  <Th>Contact</Th>
+                  <Th>Statut</Th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-gray-100 bg-white">
+                {mappedCells.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="px-4 py-8 text-center text-sm font-semibold text-gray-500"
+                    >
+                      Aucune cellule géolocalisée trouvée avec les filtres
+                      sélectionnés.
+                    </td>
+                  </tr>
+                ) : (
+                  mappedCells.map((cell) => (
+                    <tr key={cell.id} className="hover:bg-gray-50">
+                      <Td>
+                        <p className="font-black text-gray-950">{cell.name}</p>
+                        <p className="text-xs font-bold text-[var(--louange-purple)]">
+                          {cell.code}
+                        </p>
+                      </Td>
+
+                      <Td>
+                        <p>{cell.country}</p>
+                        <p className="text-sm text-gray-500">
+                          {cell.city || "-"}
+                        </p>
+                      </Td>
+
+                      <Td>{cell.address || "-"}</Td>
+
+                      <Td>{cell.pastor_name || "-"}</Td>
+
+                      <Td>{cell.pastor_phone || "-"}</Td>
+
+                      <Td>
+                        <CellStatusBadge status={cell.status} />
+                      </Td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="mt-4 space-y-3 lg:hidden">
+          {mappedCells.map((cell) => (
+            <div
+              key={cell.id}
+              className="rounded-2xl border border-gray-100 bg-gray-50 p-4"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-black text-gray-950">{cell.name}</p>
+                  <p className="text-xs font-bold text-[var(--louange-purple)]">
+                    {cell.code}
+                  </p>
+                </div>
+
+                <CellStatusBadge status={cell.status} />
+              </div>
+
+              <div className="mt-3 space-y-1 text-sm text-gray-600">
+                <p>
+                  <strong>Pays / Ville :</strong> {cell.country} /{" "}
+                  {cell.city || "-"}
+                </p>
+                <p>
+                  <strong>Adresse :</strong> {cell.address || "-"}
+                </p>
+                <p>
+                  <strong>Pasteur :</strong> {cell.pastor_name || "-"}
+                </p>
+                <p>
+                  <strong>Contact :</strong> {cell.pastor_phone || "-"}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
     </div>
   );
@@ -209,5 +310,21 @@ function SelectFilter({
         ))}
       </select>
     </div>
+  );
+}
+
+function Th({ children }: { children: React.ReactNode }) {
+  return (
+    <th className="whitespace-nowrap px-4 py-4 text-left text-xs font-black uppercase tracking-wide">
+      {children}
+    </th>
+  );
+}
+
+function Td({ children }: { children: React.ReactNode }) {
+  return (
+    <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-gray-700">
+      {children}
+    </td>
   );
 }

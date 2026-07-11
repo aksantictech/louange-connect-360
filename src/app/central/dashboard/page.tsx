@@ -8,6 +8,7 @@ import {
   Landmark,
   MapPinned,
   Search,
+  TrendingDown,
   TrendingUp,
   Users,
   Wallet,
@@ -41,6 +42,12 @@ type CellRow = {
   lead_pastor_id: string | null;
 };
 
+type PastorRow = {
+  id: string;
+  pastor_role: string | null;
+  status: string | null;
+};
+
 type ActivityRow = {
   id: string;
   participants_count: number | null;
@@ -54,12 +61,23 @@ type FinanceReportRow = {
   status: string | null;
 };
 
+type ExpenseReportRow = {
+  id: string;
+  total_cdf: number | null;
+  total_usd: number | null;
+  status: string | null;
+};
+
 type AssetRow = {
   id: string;
   estimated_value: number | null;
 };
 
-function getDateRange(yearValue: string, quarterValue: string, monthValue: string) {
+function getDateRange(
+  yearValue: string,
+  quarterValue: string,
+  monthValue: string
+) {
   const currentYear = new Date().getFullYear();
   const year = Number(yearValue || currentYear);
 
@@ -81,10 +99,16 @@ function getDateRange(yearValue: string, quarterValue: string, monthValue: strin
   const startDate = new Date(year, startMonth, 1).toISOString().slice(0, 10);
   const endDate = new Date(year, endMonth + 1, 0).toISOString().slice(0, 10);
 
-  return { startDate, endDate, year };
+  return { startDate, endDate };
 }
 
-export default async function CentralDashboardPage({ searchParams }: PageProps) {
+function cleanStringList(values: Array<string | null>) {
+  return Array.from(new Set(values.filter(Boolean) as string[])).sort();
+}
+
+export default async function CentralDashboardPage({
+  searchParams,
+}: PageProps) {
   const params = searchParams ? await searchParams : undefined;
 
   const selectedYear = params?.year || String(new Date().getFullYear());
@@ -94,7 +118,7 @@ export default async function CentralDashboardPage({ searchParams }: PageProps) 
   const selectedCity = params?.city || "";
   const search = params?.q || "";
 
-  const { startDate, endDate, year } = getDateRange(
+  const { startDate, endDate } = getDateRange(
     selectedYear,
     selectedQuarter,
     selectedMonth
@@ -102,25 +126,27 @@ export default async function CentralDashboardPage({ searchParams }: PageProps) 
 
   const { data: allCellsData } = await supabase
     .from("cells")
-    .select("id, code, name, country, city, status, latitude, longitude, lead_pastor_id")
+    .select(
+      "id, code, name, country, city, status, latitude, longitude, lead_pastor_id"
+    )
     .order("country", { ascending: true });
 
+  const { data: allPastorsData } = await supabase
+    .from("pastors")
+    .select("id, pastor_role, status");
+
   const allCells = (allCellsData || []) as CellRow[];
+  const allPastors = (allPastorsData || []) as PastorRow[];
 
-  const countries = Array.from(
-    new Set(allCells.map((cell) => cell.country).filter(Boolean))
-  ).sort() as string[];
+  const countries = cleanStringList(allCells.map((cell) => cell.country));
 
-  const cities = Array.from(
-    new Set(
-      allCells
-        .filter((cell) =>
-          selectedCountry ? cell.country === selectedCountry : true
-        )
-        .map((cell) => cell.city)
-        .filter(Boolean)
-    )
-  ).sort() as string[];
+  const cities = cleanStringList(
+    allCells
+      .filter((cell) =>
+        selectedCountry ? cell.country === selectedCountry : true
+      )
+      .map((cell) => cell.city)
+  );
 
   let filteredCells = allCells;
 
@@ -153,6 +179,7 @@ export default async function CentralDashboardPage({ searchParams }: PageProps) 
 
   let activities: ActivityRow[] = [];
   let financeReports: FinanceReportRow[] = [];
+  let expenseReports: ExpenseReportRow[] = [];
   let assets: AssetRow[] = [];
   let ministers: Array<{ pastor_id: string | null }> = [];
 
@@ -169,17 +196,20 @@ export default async function CentralDashboardPage({ searchParams }: PageProps) 
       .gte("activity_date", startDate)
       .lte("activity_date", endDate);
 
-    let assetsQuery = supabase
-      .from("assets")
-      .select("id, estimated_value");
+    let expenseQuery = supabase
+      .from("finance_expense_reports")
+      .select("id, total_cdf, total_usd, status")
+      .gte("expense_date", startDate)
+      .lte("expense_date", endDate);
 
-    let ministersQuery = supabase
-      .from("cell_ministers")
-      .select("pastor_id");
+    let assetsQuery = supabase.from("assets").select("id, estimated_value");
+
+    let ministersQuery = supabase.from("cell_ministers").select("pastor_id");
 
     if (filteredCellIds.length > 0) {
       activitiesQuery = activitiesQuery.in("cell_id", filteredCellIds);
       financeQuery = financeQuery.in("cell_id", filteredCellIds);
+      expenseQuery = expenseQuery.in("cell_id", filteredCellIds);
       assetsQuery = assetsQuery.in("cell_id", filteredCellIds);
       ministersQuery = ministersQuery.in("cell_id", filteredCellIds);
     }
@@ -187,19 +217,24 @@ export default async function CentralDashboardPage({ searchParams }: PageProps) 
     const [
       activitiesResponse,
       financeResponse,
+      expenseResponse,
       assetsResponse,
       ministersResponse,
     ] = await Promise.all([
       activitiesQuery,
       financeQuery,
+      expenseQuery,
       assetsQuery,
       ministersQuery,
     ]);
 
     activities = (activitiesResponse.data || []) as ActivityRow[];
     financeReports = (financeResponse.data || []) as FinanceReportRow[];
+    expenseReports = (expenseResponse.data || []) as ExpenseReportRow[];
     assets = (assetsResponse.data || []) as AssetRow[];
-    ministers = (ministersResponse.data || []) as Array<{ pastor_id: string | null }>;
+    ministers = (ministersResponse.data || []) as Array<{
+      pastor_id: string | null;
+    }>;
   }
 
   const leadPastorIds = filteredCells
@@ -212,7 +247,12 @@ export default async function CentralDashboardPage({ searchParams }: PageProps) 
 
   const uniquePastorIds = new Set([...leadPastorIds, ...ministerPastorIds]);
 
+  const pastorsForDashboard = hasCellFilter
+    ? allPastors.filter((pastor) => uniquePastorIds.has(pastor.id))
+    : allPastors;
+
   const totalCells = filteredCells.length;
+
   const activeCells = filteredCells.filter(
     (cell) => cell.status === "active"
   ).length;
@@ -228,6 +268,24 @@ export default async function CentralDashboardPage({ searchParams }: PageProps) 
   const countriesCount = new Set(
     filteredCells.map((cell) => cell.country).filter(Boolean)
   ).size;
+
+  const totalPastors = pastorsForDashboard.length;
+
+  const visionaries = pastorsForDashboard.filter(
+    (pastor) => pastor.pastor_role === "pasteur_visionnaire"
+  ).length;
+
+  const titularPastors = pastorsForDashboard.filter(
+    (pastor) => pastor.pastor_role === "pasteur_titulaire"
+  ).length;
+
+  const assistantPastors = pastorsForDashboard.filter(
+    (pastor) => pastor.pastor_role === "pasteur_assistant"
+  ).length;
+
+  const bergers = pastorsForDashboard.filter(
+    (pastor) => pastor.pastor_role === "berger"
+  ).length;
 
   const monthlyParticipants = activities.reduce((sum, activity) => {
     const total =
@@ -249,9 +307,28 @@ export default async function CentralDashboardPage({ searchParams }: PageProps) 
     0
   );
 
+  const monthlyExpenseCdf = expenseReports.reduce(
+    (sum, report) => sum + Number(report.total_cdf || 0),
+    0
+  );
+
+  const monthlyExpenseUsd = expenseReports.reduce(
+    (sum, report) => sum + Number(report.total_usd || 0),
+    0
+  );
+
+  const balanceCdf = monthlyIncomeCdf - monthlyExpenseCdf;
+  const balanceUsd = monthlyIncomeUsd - monthlyExpenseUsd;
+
   const pendingFinanceReports = financeReports.filter(
     (report) => report.status === "pending"
   ).length;
+
+  const pendingExpenseReports = expenseReports.filter(
+    (report) => report.status === "pending"
+  ).length;
+
+  const totalPendingReports = pendingFinanceReports + pendingExpenseReports;
 
   const assetsCount = assets.length;
 
@@ -279,7 +356,7 @@ export default async function CentralDashboardPage({ searchParams }: PageProps) 
           </h3>
         </div>
 
-        <form className="grid gap-4 xl:grid-cols-7">
+        <form className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7">
           <FilterSelect
             name="year"
             label="Année"
@@ -304,7 +381,20 @@ export default async function CentralDashboardPage({ searchParams }: PageProps) 
             name="month"
             label="Mois"
             value={selectedMonth}
-            options={["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"]}
+            options={[
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "9",
+              "10",
+              "11",
+              "12",
+            ]}
             labels={{
               "1": "Janvier",
               "2": "Février",
@@ -335,11 +425,7 @@ export default async function CentralDashboardPage({ searchParams }: PageProps) 
             options={cities}
           />
 
-          <FilterInput
-            name="q"
-            label="Recherche"
-            defaultValue={search}
-          />
+          <FilterInput name="q" label="Recherche" defaultValue={search} />
 
           <div className="flex items-end gap-2">
             <button
@@ -382,8 +468,8 @@ export default async function CentralDashboardPage({ searchParams }: PageProps) 
 
         <StatCard
           title="Pasteurs associés"
-          value={String(uniquePastorIds.size)}
-          subtitle="Responsables des cellules filtrées"
+          value={String(totalPastors)}
+          subtitle="Selon les filtres appliqués"
           icon={Users}
           tone="green"
         />
@@ -399,37 +485,75 @@ export default async function CentralDashboardPage({ searchParams }: PageProps) 
 
       <section className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
+          title="Pasteurs visionnaires"
+          value={String(visionaries)}
+          subtitle="Leadership général"
+          icon={Users}
+          tone="purple"
+        />
+
+        <StatCard
+          title="Pasteurs titulaires"
+          value={String(titularPastors)}
+          subtitle="Responsables principaux"
+          icon={Users}
+          tone="green"
+        />
+
+        <StatCard
+          title="Pasteurs assistants"
+          value={String(assistantPastors)}
+          subtitle="Appui pastoral"
+          icon={Users}
+          tone="gold"
+        />
+
+        <StatCard
+          title="Bergers"
+          value={String(bergers)}
+          subtitle="Encadrement des cellules"
+          icon={Users}
+          tone="red"
+        />
+      </section>
+
+      <section className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
           title="Recettes FC"
           value={`${monthlyIncomeCdf.toLocaleString("fr-FR")} FC`}
-          subtitle="Rapports financiers saisis"
+          subtitle={`${monthlyIncomeUsd.toLocaleString("fr-FR", {
+            maximumFractionDigits: 2,
+          })} USD`}
           icon={TrendingUp}
           tone="green"
         />
 
         <StatCard
-          title="Équivalent USD"
-          value={`${monthlyIncomeUsd.toLocaleString("fr-FR", {
+          title="Dépenses FC"
+          value={`${monthlyExpenseCdf.toLocaleString("fr-FR")} FC`}
+          subtitle={`${monthlyExpenseUsd.toLocaleString("fr-FR", {
             maximumFractionDigits: 2,
           })} USD`}
-          subtitle="Selon le taux paramétré"
+          icon={TrendingDown}
+          tone="red"
+        />
+
+        <StatCard
+          title="Solde financier"
+          value={`${balanceCdf.toLocaleString("fr-FR")} FC`}
+          subtitle={`${balanceUsd.toLocaleString("fr-FR", {
+            maximumFractionDigits: 2,
+          })} USD`}
           icon={Wallet}
-          tone="purple"
+          tone={balanceCdf >= 0 ? "purple" : "red"}
         />
 
         <StatCard
           title="Validations"
-          value={String(pendingFinanceReports)}
-          subtitle="Rapports financiers en attente"
+          value={String(totalPendingReports)}
+          subtitle={`${pendingFinanceReports} entrée(s), ${pendingExpenseReports} dépense(s)`}
           icon={AlertTriangle}
           tone="gold"
-        />
-
-        <StatCard
-          title="Patrimoine"
-          value={String(assetsCount)}
-          subtitle={`${assetsValue.toLocaleString("fr-FR")} USD estimés`}
-          icon={Landmark}
-          tone="red"
         />
       </section>
 
@@ -467,7 +591,7 @@ export default async function CentralDashboardPage({ searchParams }: PageProps) 
 
         <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">
           <h3 className="text-xl font-black text-gray-950">
-            Synthèse pastorale
+            Synthèse patrimoine
           </h3>
           <p className="mt-1 text-sm text-gray-500">
             Lecture rapide selon les filtres appliqués.
@@ -475,15 +599,19 @@ export default async function CentralDashboardPage({ searchParams }: PageProps) 
 
           <div className="mt-5 space-y-3">
             <MiniStat
-              label="Rapports"
-              value={monthlyReportsCount}
-              icon={CalendarCheck}
+              label="Biens enregistrés"
+              value={assetsCount}
+              icon={Landmark}
             />
-            <MiniStat
-              label="Pasteurs associés"
-              value={uniquePastorIds.size}
-              icon={Users}
-            />
+
+            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+              <p className="text-sm font-bold text-gray-500">
+                Valeur estimée
+              </p>
+              <p className="mt-1 text-2xl font-black text-gray-950">
+                {assetsValue.toLocaleString("fr-FR")} USD
+              </p>
+            </div>
           </div>
         </div>
       </section>

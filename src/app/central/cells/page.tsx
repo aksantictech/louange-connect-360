@@ -174,7 +174,7 @@ export default async function CentralCellsPage({ searchParams }: PageProps) {
             options={["active", "pending", "inactive", "archived"]}
           />
 
-          <div className="flex items-end gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
             <button
               type="submit"
               className="w-full rounded-2xl bg-[var(--louange-purple)] px-5 py-3 text-sm font-black text-white"
@@ -191,9 +191,9 @@ export default async function CentralCellsPage({ searchParams }: PageProps) {
           </div>
         </form>
 
-        <div className="overflow-hidden rounded-2xl border border-gray-100">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-100">
+        <div className="rounded-2xl border border-gray-100">
+  <div className="max-w-full overflow-x-auto">
+            <table className="min-w-[980px] divide-y divide-gray-100">
               <thead className="bg-[var(--louange-purple-dark)] text-white">
                 <tr>
                   <Th>Cellule</Th>

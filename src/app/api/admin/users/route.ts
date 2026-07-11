@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+const cellLimitedRoles = [
+  "cellule",
+  "pasteur_cellule",
+  "tresorier_cellule",
+  "secretaire_cellule",
+];
+
 export async function POST(request: Request) {
   const body = await request.json();
 
@@ -9,20 +16,17 @@ export async function POST(request: Request) {
 
   if (!supabaseUrl || !serviceRoleKey) {
     return NextResponse.json(
-      { error: "Configuration Supabase serveur manquante." },
+      {
+        error:
+          "Configuration Supabase serveur manquante. Vérifie SUPABASE_SERVICE_ROLE_KEY dans .env.local.",
+      },
       { status: 500 }
     );
   }
 
   const admin = createClient(supabaseUrl, serviceRoleKey);
 
-  const {
-    email,
-    password,
-    full_name,
-    role,
-    assigned_cell_id,
-  } = body;
+  const { email, password, full_name, role, assigned_cell_id } = body;
 
   if (!email || !password || !full_name || !role) {
     return NextResponse.json(
@@ -31,9 +35,9 @@ export async function POST(request: Request) {
     );
   }
 
-  if (role === "cellule" && !assigned_cell_id) {
+  if (cellLimitedRoles.includes(role) && !assigned_cell_id) {
     return NextResponse.json(
-      { error: "Un utilisateur de type cellule doit être rattaché à une cellule." },
+      { error: "Ce rôle doit être rattaché à une cellule." },
       { status: 400 }
     );
   }
@@ -67,5 +71,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: profileError.message }, { status: 400 });
   }
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({
+    success: true,
+    user_id: authData.user.id,
+  });
 }

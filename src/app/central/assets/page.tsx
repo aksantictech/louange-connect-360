@@ -2,6 +2,8 @@ import { Building2, Landmark, PackageCheck, Wallet } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import StatCard from "@/components/dashboard/StatCard";
 import { supabase } from "@/lib/supabase/client";
+import CollapsibleSection from "@/components/ui/CollapsibleSection";
+import AssetForm from "@/components/assets/AssetForm";
 
 export const dynamic = "force-dynamic";
 
@@ -68,6 +70,15 @@ export default async function AssetsPage() {
       </section>
 
       <section className="mt-6 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">
+        <div className="mt-6">
+  <CollapsibleSection
+    title="Ajouter un patrimoine"
+    description="Temple, parcelle, maison, terrain, matériel, mobilier ou autre bien."
+    buttonLabel="Ajouter un patrimoine"
+  >
+    <AssetForm />
+  </CollapsibleSection>
+</div>
         <h3 className="text-xl font-black text-gray-950">
           Liste du patrimoine
         </h3>

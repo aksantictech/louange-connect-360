@@ -89,7 +89,7 @@ export const centralNavigation: NavigationItem[] = [
   },
 ];
 
-export const cellNavigation: NavigationItem[] = [
+export const cellNavigation = [
   {
     label: "Dashboard",
     href: "/cell/dashboard",
@@ -104,6 +104,11 @@ export const cellNavigation: NavigationItem[] = [
     label: "Finances",
     href: "/cell/finances",
     icon: Wallet,
+  },
+  {
+    label: "Patrimoine",
+    href: "/cell/assets",
+    icon: Building2,
   },
   {
     label: "Rapports",
