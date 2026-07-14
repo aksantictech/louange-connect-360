@@ -7,6 +7,7 @@ import {
   Wallet,
 } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
+import OnlineDonationsFinanceWidget from "@/components/finances/OnlineDonationsFinanceWidget";
 import StatCard from "@/components/dashboard/StatCard";
 import FinanceEntryForm from "@/components/finances/FinanceEntryForm";
 import FinanceExpenseForm from "@/components/finances/FinanceExpenseForm";
@@ -321,6 +322,7 @@ export default async function FinancesPage({ searchParams }: PageProps) {
           tone="gold"
         />
       </section>
+      <OnlineDonationsFinanceWidget />
 
       <section className="mt-6 grid gap-6 xl:grid-cols-2">
         <CollapsibleSection

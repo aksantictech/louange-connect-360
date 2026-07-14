@@ -57,6 +57,7 @@ export const centralNavigation: NavigationItem[] = [
     href: "/central/finances",
     icon: Wallet,
   },
+  { label: "Dons en ligne", href: "/central/finances/online-donations", icon: Wallet },
   {
     label: "Validations",
     href: "/central/validations",
